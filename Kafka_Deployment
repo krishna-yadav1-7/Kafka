@@ -1,0 +1,167 @@
+#################################
+	Kafka Deployment
+#################################
+
+
+
+## First we will setup Zookeeper 
+
+
+-----**** Update and install necessary packages ****-----
+
+sudo apt-get update && sudo apt-get -y install ca-certificates zip net-tools netcat
+
+-----**** Install java ****-----
+
+sudo apt install openjdk-8-jdk openjdk-8-jre -y
+
+-----**** Set swappiness ****-----
+
+sudo sysctl vm.swappiness=1
+echo 'vm.swappiness=1' | sudo tee --append /etc/sysctl.conf
+
+-----**** Download zookeeper and kafka ****-----
+
+wget https://archive.apache.org/dist/kafka/0.10.2.1/kafka_2.12-0.10.2.1.tgz
+
+tar -xzvf kafka_2.12-0.10.2.1.tgz
+
+sudo mv kafka_2.12-0.10.2.1 /usr/local/kafka
+
+sudo chown ubuntu:ubuntu -R /usr/local/kafka
+
+-----**** Configure environment variable ****-----
+
+nano .bashrc
+
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+export KAFKA_HOME=/usr/local/kafka
+export PATH=$PATH:$KAFKA_HOME/bin
+export PATH=$PATH:$KAFKA_HOME/config
+export PATH=$PATH:/usr/local/kafka/bin/
+export PATH=$PATH:/usr/local/kafka/config/
+
+source .bashrc
+
+echo $PATH
+
+-----**** zookeeper quickstart ****-----
+
+zookeeper-server-start.sh $KAFKA_HOME/config/zookeeper.properties
+ctrl+C
+
+-----**** Testing zookeeper install ****-----
+
+zookeeper-server-start.sh -daemon /usr/local/kafka/config/zookeeper.properties
+
+zookeeper-shell.sh localhost:2181
+
+ls /
+
+ctrl+c
+
+	
+zookeeper-server-stop.sh -daemon /usr/local/kafka/config/zookeeper.properties
+
+-----**** Create data dictionary for zookeeper****-----
+
+sudo mkdir -p /data/zookeeper
+
+sudo chown -R ubuntu:ubuntu /data/zookeeper/
+
+-----**** create server identity****-----
+
+echo "1" > /data/zookeeper/myid
+cat /data/zookeeper/myid 
+
+-----**** Configure zookeeper settings****-----
+
+rm /usr/local/kafka/config/zookeeper.properties
+nano /usr/local/kafka/config/zookeeper.properties
+
+## copy contents from file#########
+
+-----**** Start the zookeeper service ****-----
+
+zookeeper-server-start.sh -daemon /usr/local/kafka/config/zookeeper.properties
+
+## verify whether started 
+
+echo "ruok" | nc localhost 2181 ; echo
+
+echo "stat" | nc localhost 2181 ; echo
+
+
+############### Kafka Deployment ##################
+
+
+-----**** Configuring system to open 100000 files ****----
+
+echo "* hard nofile 100000
+* soft nofile 100000" | sudo tee --append /etc/security/limits.conf
+
+## Reboot instances from console
+
+# Start zookeeper
+
+ zookeeper-server-start.sh -daemon /usr/local/kafka/config/zookeeper.properties
+
+-----**** Create Kafka Data Directory ****-----
+
+sudo mkdir /data/kafka
+
+sudo chown -R ubuntu:ubuntu /data/kafka
+
+------**** Configure kafka properties ****-----
+
+rm /usr/local/kafka/config/server.properties 
+
+nano /usr/local/kafka/config/server.properties
+## copy contents from file
+
+-----**** Start kafka service ****-----
+
+kafka-server-start.sh -daemon /usr/local/kafka/config/server.properties
+
+nc -vz localhost 9092
+
+## Check logs
+
+tail -f /usr/local/kafka/logs/server.log 
+
+-----**** Working with kafka ****-----
+
+## Create a topic
+
+kafka-topics.sh --zookeeper localhost:2181/kafka --create --topic my-topic --replication-factor 1 --partitions 3 
+
+## Create a producer
+
+kafka-console-producer.sh --broker-list localhost:9092 --topic my-topic 
+(publish some data)
+
+## Create a consumer
+
+kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic my-topic --from-beginning
+
+## Create another topic
+
+kafka-topics.sh --zookeeper localhost:2181/kafka --create --topic my-topic2 --replication-factor 1 --partitions 3 
+
+## List topics 
+
+kafka-topics.sh --zookeeper localhost:2181/kafka --list
+
+
+
+
+
+
+
+
+
+
+
+
+
+

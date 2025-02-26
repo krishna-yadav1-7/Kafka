@@ -1,0 +1,129 @@
+sudo apt-get update && sudo apt-get -y  install ca-certification zip net-tools netcat 
+
+sudo apt install openjdk-8-jdk  openjdk-8-jre
+
+sudo sysctl vm.swappiness=1
+
+echo 'vm.swappiness=1' | sudo tee --append /etc/sysctl.conf
+
+wget https://archive.apache.org/dist/kafka/0.10.2.1/kafka_2.12-0.10.2.1.tgz
+
+tar -xzvf  kafka_2.12-0.10.2.1.tgz
+
+sudo mv  kafka_2.12-0.10.2.1 /usr/local/kafka
+
+sudo chown ubuntu:ubuntu -R /usr/local/kafka/
+
+###########Conf environment variable##################
+
+nano .bashrc
+
+export JAVA_HOME=/usr/lib/jvm/java-8-openjdk-amd64
+export KAFKA_HOME=/usr/local/kafka
+export PATH=$PATH:$KAFKA_HOME/bin
+export PATH=$PATH:$KAFKA_HOME/config
+export PATH=$PATH:/usr/local/kafka/bin/
+export PATH=$PATH:/usr/local/kafka/config/
+
+
+source .bashrc
+echo $PATH
+
+################zookeeper quickstart############
+
+zookeeper-server-start.sh $KAFKA_HOME /config/zookeeper.properties
+
+zookeeper-server-start.sh -daemon /usr/local/kafka/config/zookeeper.properties
+
+zookeeper-shell.sh localhost:2181
+
+ls /
+
+ctrl+c
+
+echo "ruok"  |  nc localhost 2181 ; echo
+
+zookeeper-server-stop.sh -daemon /usr/local/kafka/config/zookeeper.properties
+
+
+############CREATE DATA DICTIONARY FOR ZOOKEEPER##############
+
+sudo mkdir -p /data/zookeeper
+sudo chown -R ubuntu:ubuntu /data/zookeeper/
+
+------------*** CREATE SERVER IDENTITY****----------
+
+echo "1" > /data/zookeeper/myid
+cat /data/zookeeper/myid
+
+-----------------------Config zookeeper settings---------------------------
+
+rm /usr/local/kafka/config/zookeeper.properties
+nano /usr/local/kafka/config/zookeeper.properties
+##copy content from the file ##
+
+----------------------***Start the zookeeper service***----------------------------
+
+zookeeper-server-start.sh  -daemon /usr/local/kafka/config/zookeeper.properties
+
+#####verify whether started or not 
+
+echo "ruok"  |  nc localhost 22181 ; echo 
+echo "start"  |  nc localhost 22181 ; echo 
+
+
+###################KAFKA DEPLOYMENT ##################
+
+------------------***Configuring system to open 100000 files ****--------
+
+echo "* hard nofile 100000
+* soft nofile 100000"  |  sudo tee --append /etc/security/limits.conf 
+
+####Reboot instance fron console
+
+#Start zookeper
+
+zookeeper-server-start.sh  -daemon /usr/local/kafka/config/zookeeper.properties
+
+-----------------------****Create Kafka Data Directory****-------------------------------
+
+sudo mkdir /data/kafka
+ sudo chown _R ubuntu:ubuntu /data/kafka
+
+-----------------------*****Config kafka properties****--------
+rm /usr/local/kafka/config/server.properties
+
+nano /usr/local/kafka/config/server.properties
+
+#####copy content from file
+
+----------***Start kafka service***---------------
+
+kafka-server-start.sh  -daemon /usr/local/kafka/config/server.properties
+
+nc -vz localhost 9092
+
+## Check logs 
+
+tail -f /usr/local/kafka/server.log
+
+-------***Working with kafka REALTIME***-------
+###Create a topic
+
+kafka-topic.sh --zookeeper localhost:2181/kafka --create --topic my-topic --replication-factor 1 --partitions 3
+
+## Create a PRODUCER 
+
+kafka-console-produce.sh --broker-list localhost:9092 --topic my-topic
+(publish some data)
+
+##Create CONSUMER
+
+kafka-topic.sh --zookeeper localhost:2181/kafka --create --topic my-topic --replication-factor 1 --partitions 3
+
+## List topics
+
+kafka-topic.sh --zookeeper localhost:2181/kafka --list
+
+
+
