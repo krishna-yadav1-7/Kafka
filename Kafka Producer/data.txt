@@ -1,0 +1,5 @@
+pkc-619z3.us-east1.gcp.confluent.cloud:9092
+
+key : Z74AJ5WBMOERI65A
+
+secret : UeXlQAPeVOZPsGNCEFNcmLWVCITxgxwzErZAC9cu7Fky9VEkwUFyjr282+KAH+NZ
